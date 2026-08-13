@@ -71,6 +71,7 @@ def definitions_secret_word(secret_word: str) -> None:
     answer = input("Дать подсказку в виде определения слова? - напиши: да или нет: ")
     if answer == "да":
         print("Определение секретного слова:", list_words[secret_word])
+
     else:
         print("Играем без подсказки значение слова")
 
@@ -83,7 +84,7 @@ def open_secret_letter(secret_words: str, letter: str, result: list) -> list:
     return result
 
 
-def demonstration_of_error(letter: str, previously_proposed_letter: set, secret_words: str) -> bool:
+def print_error(letter: str, previously_proposed_letter: set, secret_words: str) -> bool:
     if letter == " ":
         print("Это пробел")
         return False
@@ -125,8 +126,7 @@ def demonstration_of_error(letter: str, previously_proposed_letter: set, secret_
 
 def run_game_loop() -> bool:
     print("Начать новую игру? - напиши: да или нет")
-    answer_start_or_stop = input()
-
+    answer_start_or_stop = input().lower()
     if answer_start_or_stop == "да":
         print("Перед началом игры настрой подсказки")
         return True
@@ -144,19 +144,20 @@ def validate_letter(letter: str, previously_proposed_letter: set, secret_word: s
     return False
 
 
-def check_end_game(result: list, mistake: int) -> str | tuple | None:
+def check_end_game(result: list, mistake: int) -> str:
     if mistake <= len(hangman_states) and "*" not in result:
         return "win"
 
     elif mistake >= len(hangman_states) - 1:
         return "loss"
 
-    return "game_continue", None
+    return "game_continue"
 
 
 def check_game_round(mistake: int, result: list) -> bool:
     if mistake >= len(hangman_states) - 1:
         return False
+
     if "*" not in result:
         return False
 
@@ -168,36 +169,24 @@ def print_game_states(mistake: int) -> None:
     print(hangman_states[mistake].lstrip())
 
 
-def print_secret_letters_before_game(secret_words: str, result: list, previously_proposed_letter: set) -> None | list | bool:
-    print("Выбери уровень сложности - напиши сколько букв открыть в слове 1 или 2, или напиши нет если не хочешь открыть не одной:")
+def get_number_of_hint_letters() -> bool | str:
+    print("Выбери уровень сложности - напиши сколько букв открыть в загаданном слове 1 или 2, или напиши любой другой символ если не хочешь открыть не одной буквы:")
+    numbers_of_letter = input()
 
+    if numbers_of_letter in ("1", "2"):
+       return numbers_of_letter
+
+    return False
+
+
+def get_random_letter(secret_word: str, previously_proposed_letter: set) -> str | bool:
     while True:
-        numbers_of_letter = input()
+        chosen_letter = random.choice(list(secret_word))
+        if chosen_letter not in previously_proposed_letter:
+            return chosen_letter
 
-        if numbers_of_letter == "1" or numbers_of_letter == "2":
-            counter = 0
-
-            while int(numbers_of_letter) - counter:
-                secret_letter = random.choice(list(secret_words))
-
-                if secret_letter not in previously_proposed_letter:
-                    counter += 1
-                    previously_proposed_letter.add(secret_letter)
-
-                    for i in range(len(secret_words)):
-
-                        if secret_letter == secret_words[i]:
-                            result[i] = secret_letter
-
-            return result
-
-        elif numbers_of_letter == "нет":
-            print("Все буквы в слове будут закрыты")
+        elif previously_proposed_letter == set(secret_word): #Страховка от бесконечного цикла хотя по факту это условие не выполнится, можно обойтись без него.
             return False
-
-        else:
-            print("Некорректный ввод для настройки подсказки, попробуй ещё раз или откажись")
-            continue
 
 
 def game_loop() -> None:
@@ -206,20 +195,34 @@ def game_loop() -> None:
     previously_proposed_letter = set()
     mistake = 0
     definitions_secret_word(secret_word)
-    print_secret_letters_before_game(secret_word, result, previously_proposed_letter)
+    letters_to_open_count = get_number_of_hint_letters()
+
+    if letters_to_open_count:
+        print("Количество открытых букв в загаданном слове:", letters_to_open_count)
+        open_letter_counter = 0
+        while int(letters_to_open_count) > open_letter_counter:
+            open_letter_counter += 1
+            get_random_letter(secret_word, previously_proposed_letter)
+            random_letter = get_random_letter(secret_word, previously_proposed_letter)
+            open_secret_letter(secret_word, random_letter, result)
+            previously_proposed_letter.add(random_letter)
+
+    else:
+        print("Все буквы в слове будут закрыты")
 
     while check_game_round(mistake, result):
         print(result)
         print("Введите букву")
         letter = input().upper()
 
-        if demonstration_of_error(letter, previously_proposed_letter, secret_word):
+        if print_error(letter, previously_proposed_letter, secret_word):
             previously_proposed_letter.add(letter)
             mistake += 1
 
         elif validate_letter(letter, previously_proposed_letter, secret_word):
             open_secret_letter(secret_word, letter, result)
             previously_proposed_letter.add(letter)
+
         print_game_states(mistake)
 
         if check_end_game(result, mistake) == "win":
@@ -243,8 +246,3 @@ def hangman_game() -> None:
 
 if __name__ == "__main__":
     hangman_game()
-
-
-
-
-

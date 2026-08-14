@@ -179,14 +179,14 @@ def get_number_of_hint_letters() -> bool | str:
     return False
 
 
-def get_random_letter(secret_word: str, previously_proposed_letter: set) -> str | bool:
+def get_random_letter(secret_word: str, previously_proposed_letter: set) -> str | None:
     while True:
         chosen_letter = random.choice(list(secret_word))
         if chosen_letter not in previously_proposed_letter:
             return chosen_letter
 
         elif previously_proposed_letter == set(secret_word): #Страховка от бесконечного цикла хотя по факту это условие не выполнится, можно обойтись без него.
-            return False
+            return None
 
 
 def game_loop() -> None:
